@@ -430,6 +430,8 @@ const EXTRAS = [
   {key:"fender",   label:"Передні підкрилки"},
   {key:"handle",   label:"Дверні ручки"},
 ];
+/* Назва дод. опції з позначкою стилю (фото-ключ лишається e.label) */
+function extraLabel(e){ return e.key === "fender" ? e.label : e.label + " (стиль 2015–2021)"; }
 const SINGLE_INT = [
   {key:"cabin",  label:"Комплект апгрейду салону", options:["Чорний","Бежевий","Не потрібно"]},
   {key:"wheel",  label:"Кермо",                    options:["Темне дерево","Світле дерево","Карбон","Не потрібно"]},
@@ -501,7 +503,7 @@ EXTRAS.forEach(e=>{
   el.className = "toggle";
   el.dataset.ekey = e.key;
   const tthumb = PHOTOS["extra::"+e.label];
-  el.innerHTML = `${tthumb?`<img class="t-thumb" src="${tthumb}" alt="">`:""}<span class="t-label">${e.label}</span>
+  el.innerHTML = `${tthumb?`<img class="t-thumb" src="${tthumb}" alt="">`:""}<span class="t-label">${extraLabel(e)}</span>
     <div class="switch">
       <button class="yes" data-v="1">Так</button>
       <button class="no on" data-v="0">Ні</button>
@@ -620,7 +622,7 @@ function extrasGalleryHTML(){
     cards.push(`<div class="ps-card ${sel?"sel":""}">
         <div class="badge"><img class="bf" src="${RED}"><span>\u2713</span></div>
         ${pic}
-        <div class="cn">${e.label}</div>
+        <div class="cn">${extraLabel(e)}</div>
       </div>`);
   });
   return `<div class="ps-gal ex-gal">${cardsRows(cards, `<div class="gl">Додаткові опції</div>`)}</div>`;
