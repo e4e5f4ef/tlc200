@@ -716,6 +716,7 @@ function generate(){
   document.title = `Бриф LC200 — ${orderNo} — ${name}`;
   document.getElementById("preview").classList.add("open");
   document.getElementById("pvScroll").scrollTop = 0;
+  requestAnimationFrame(fitPreview);
 }
 /* ---------- ТИМЧАСОВІ ЗНАЧЕННЯ ЗА ЗАМОВЧУВАННЯМ (прибрати за командою) ---------- */
 function applyDefaults(){
@@ -744,6 +745,21 @@ applyDefaults();
 document.getElementById("genBtn").onclick = generate;
 document.getElementById("pvClose").onclick = ()=> document.getElementById("preview").classList.remove("open");
 document.getElementById("pvPrint").onclick = ()=> window.print();
+/* Масштабувати прев'ю під ширину екрана (для мобільних) */
+function fitPreview(){
+  const sc = document.getElementById("pvScroll");
+  const cont = document.getElementById("pvContent");
+  if(!sc || !cont) return;
+  const page = cont.querySelector(".ps-page");
+  if(!page) return;
+  cont.style.zoom = "1";
+  const avail = sc.clientWidth - 28;
+  const pageW = page.offsetWidth;
+  const z = Math.min(1, avail / pageW);
+  cont.style.zoom = z;
+}
+window.addEventListener("resize", ()=>{ if(document.getElementById("preview").classList.contains("open")) fitPreview(); });
+window.addEventListener("orientationchange", ()=> setTimeout(fitPreview, 200));
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") document.getElementById("preview").classList.remove("open"); });
 </script>
 </body>
