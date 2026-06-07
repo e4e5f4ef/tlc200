@@ -68,7 +68,7 @@
     padding:11px 12px;border-radius:9px;font-size:15px;outline:none;
   }
   .field input:focus, .field select:focus{border-color:var(--red)}
-  .field input.invalid{border-color:var(--red-2);box-shadow:0 0 0 2px rgba(255,39,64,.25)}
+  .field input.invalid, .field select.invalid{border-color:var(--red-2);box-shadow:0 0 0 2px rgba(255,39,64,.25)}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
@@ -89,6 +89,9 @@
   .group:last-child{padding-bottom:4px}
   .group-title{font-size:21px;font-weight:800;margin-bottom:16px;color:#fff;display:flex;align-items:center;gap:11px;letter-spacing:.3px}
   .group-title::before{content:"";width:6px;height:24px;background:var(--red);border-radius:3px;flex:none}
+  .group.group-invalid{border:1px solid var(--red-2);border-radius:12px;padding:14px;background:rgba(211,19,43,.07);box-shadow:0 0 0 2px rgba(255,39,64,.18)}
+  .group.group-invalid .group-title{color:var(--red-2)}
+  .toggle.toggle-invalid{border-color:var(--red-2);box-shadow:0 0 0 2px rgba(255,39,64,.22);background:linear-gradient(180deg,#241012,var(--panel-2))}
   .opts{display:flex;flex-wrap:wrap;gap:10px}
   .opt{
     position:relative;border:1px solid var(--line);background:var(--panel-2);
@@ -275,7 +278,7 @@
     <div class="fields">
       <div class="field">
         <label>№ Замовлення</label>
-        <input id="orderNo" type="text" placeholder="напр. 2026-0145">
+        <input id="orderNo" type="text" placeholder="Наприклад, 798451">
       </div>
       <div class="field">
         <label>ПІБ клієнта</label>
@@ -463,7 +466,7 @@ const NONEED_STOCK = new Set(["optics","grille","taillight","reflector"]);
 
 /* ---------- Стан ---------- */
 const state = { single:{}, extras:{} };
-EXTRAS.forEach(e=> state.extras[e.key] = false);
+EXTRAS.forEach(e=> state.extras[e.key] = null);
 
 /* ---------- Рендер груп з одиничним вибором ---------- */
 function renderSingleGroups(list, containerId){
@@ -488,6 +491,7 @@ function renderSingleGroups(list, containerId){
         state.single[g.key] = o;
         opts.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));
         el.classList.add("sel");
+        wrap.classList.remove("group-invalid");
       };
       opts.appendChild(el);
     });
@@ -553,12 +557,12 @@ EXTRAS.forEach(e=>{
   el.innerHTML = `${tthumb?`<img class="t-thumb" src="${tthumb}" alt="">`:""}<span class="t-label">${extraLabel(e)}</span>
     <div class="switch">
       <button class="yes" data-v="1">Так</button>
-      <button class="no on" data-v="0">Ні</button>
+      <button class="no" data-v="0">Ні</button>
     </div>`;
   const yes = el.querySelector(".yes");
   const no  = el.querySelector(".no");
-  yes.onclick = ()=>{ state.extras[e.key]=true;  yes.classList.add("on"); no.classList.remove("on"); el.classList.add("sel-on"); };
-  no.onclick  = ()=>{ state.extras[e.key]=false; no.classList.add("on");  yes.classList.remove("on"); el.classList.remove("sel-on"); };
+  yes.onclick = ()=>{ state.extras[e.key]=true;  yes.classList.add("on"); no.classList.remove("on"); el.classList.add("sel-on"); el.classList.remove("toggle-invalid"); };
+  no.onclick  = ()=>{ state.extras[e.key]=false; no.classList.add("on");  yes.classList.remove("on"); el.classList.remove("sel-on"); el.classList.remove("toggle-invalid"); };
   tg.appendChild(el);
 });
 
@@ -707,14 +711,46 @@ function generate(){
   const err = document.getElementById("errMsg");
 
   const missing = [];
+  // зняти попередні підсвічування
+  document.querySelectorAll(".group-invalid").forEach(x=>x.classList.remove("group-invalid"));
+  document.querySelectorAll(".toggle-invalid").forEach(x=>x.classList.remove("toggle-invalid"));
+  ["orderNo","clientName","clientPhone","year","fuel"].forEach(id=>document.getElementById(id).classList.remove("invalid"));
   const mark = (id, bad)=> document.getElementById(id).classList.toggle("invalid", bad);
-  mark("orderNo",!orderNo); mark("clientName",!name); mark("clientPhone",!phone);
+  mark("orderNo",!orderNo); mark("clientName",!name); mark("clientPhone",!phone); mark("year",!year); mark("fuel",!fuel);
   if(!orderNo) missing.push("№ замовлення");
   if(!name) missing.push("ПІБ");
   if(!phone) missing.push("телефон");
   if(!year) missing.push("рік випуску");
   if(!fuel) missing.push("тип палива");
-  if(missing.length){ err.textContent = "Заповніть: " + missing.join(", "); return; }
+  [...SINGLE_EXT, ...SINGLE_INT].forEach(g=>{
+    if(!state.single[g.key]){
+      missing.push(g.label);
+      const opt = document.querySelector(`.opt[data-gkey="${g.key}"]`);
+      const grp = opt && opt.closest(".group");
+      if(grp) grp.classList.add("group-invalid");
+    }
+  });
+  EXTRAS.forEach(e=>{
+    if(state.extras[e.key] === null || state.extras[e.key] === undefined){
+      missing.push(e.label);
+      const t = document.querySelector(`.toggle[data-ekey="${e.key}"]`);
+      if(t) t.classList.add("toggle-invalid");
+    }
+  });
+  if(missing.length){
+    err.textContent = "Заповніть: " + missing.join(", ");
+    const bad = document.querySelector(".field input.invalid, .field select.invalid, .group-invalid, .toggle-invalid");
+    if(bad){
+      const pane = bad.closest(".tabpane");
+      if(pane && !pane.classList.contains("active")){
+        const t = document.querySelector(`.tab[data-tab="${pane.id.replace("pane-","")}"]`);
+        if(t) t.click();
+      }
+      const target = (bad.closest(".field") ? bad.closest(".card") : bad);
+      target.scrollIntoView({behavior:"smooth", block:"center"});
+    }
+    return;
+  }
   err.textContent = "";
 
   const today = new Date().toLocaleDateString("uk-UA");
@@ -762,32 +798,10 @@ function generate(){
   document.getElementById("pvScroll").scrollTop = 0;
   requestAnimationFrame(fitPreview);
 }
-/* ---------- ТИМЧАСОВІ ЗНАЧЕННЯ ЗА ЗАМОВЧУВАННЯМ (прибрати за командою) ---------- */
-function applyDefaults(){
-  const pick = a => a[Math.floor(Math.random()*a.length)];
-  document.getElementById("orderNo").value   = "678876";
-  document.getElementById("clientName").value= "Pavel Test";
-  document.getElementById("clientPhone").value="+380501234567";
-  document.getElementById("year").value      = "2007\u20132015";
-  if(typeof toggleBaseKit==="function") toggleBaseKit();
-  document.getElementById("fuel").value      = "Бензин";
-  [...SINGLE_EXT, ...SINGLE_INT].forEach(g=>{
-    let opts = g.options;
-    if(NONEED_STOCK.has(g.key) && document.getElementById("year").value !== "2015–2021") opts = opts.filter(x=>x!=="Не потрібно");
-    const o = pick(opts);
-    const el = document.querySelector(`.opt[data-gkey="${g.key}"][data-val="${o}"]`);
-    if(el) el.click();
-  });
-  if(typeof syncIntercooler==="function") syncIntercooler();
-  EXTRAS.forEach(e=>{
-    const on = Math.random()<0.5;
-    const t = document.querySelector(`.toggle[data-ekey="${e.key}"] .${on?"yes":"no"}`);
-    if(t) t.click();
-  });
-}
 document.getElementById("hdrLogo").src = LOGO;
-applyDefaults();
 
+["orderNo","clientName","clientPhone"].forEach(id=>document.getElementById(id).addEventListener("input", e=>e.target.classList.remove("invalid")));
+["year","fuel"].forEach(id=>document.getElementById(id).addEventListener("change", e=>e.target.classList.remove("invalid")));
 document.getElementById("genBtn").onclick = generate;
 document.getElementById("pvClose").onclick = ()=> document.getElementById("preview").classList.remove("open");
 document.getElementById("pvPrint").onclick = ()=> window.print();
