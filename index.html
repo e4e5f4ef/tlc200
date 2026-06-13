@@ -155,6 +155,15 @@
   }
   .btn-gen:hover{filter:brightness(1.08)}
   .err-msg{color:var(--red-2);font-size:13px;text-align:center;margin-top:10px;min-height:16px}
+  .locked{opacity:.4;pointer-events:none;filter:grayscale(.35)}
+  .lock-note{display:none;color:var(--red-2);font-size:13px;font-weight:600;margin:0 0 12px}
+  .bk-price{display:inline-block;font-size:15px;font-weight:600;color:#2fd06a;background:#0d2a17;border:1px solid var(--green);border-radius:9px;padding:8px 14px;margin:0 0 14px}
+  .opt-price{font-size:13px;font-weight:600;color:#2fd06a;margin-top:6px;min-height:16px}
+  .price-total{display:none;padding:12px 16px;border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-bottom:12px;font-size:14px;color:var(--muted)}
+  .price-total .pt-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+  .price-total .pt-row b{color:var(--txt);font-size:15px;font-weight:600}
+  .price-total .pt-strong{border-top:1px solid var(--line);margin-top:6px;padding-top:9px}
+  .price-total .pt-strong b{color:#2fd06a;font-size:20px}
 
   /* ===== PRINT / PDF SHEET (темна тема, друк через img-підкладку) ===== */
   #sheet{display:none}
@@ -211,6 +220,12 @@
   .ex-gal .ps-card .cn{font-size:10px}
   .ps-card .cn{font-size:11px;text-align:center;margin-top:5px;color:var(--muted)}
   .ps-card.sel .cn{color:#fff;font-weight:700}
+  .cnp{font-size:11px;font-weight:700;color:#2fd06a;text-align:center;margin-top:2px}
+  .ps-total{border:1px solid var(--green);border-radius:8px;padding:10px 14px;margin-bottom:14px;color:var(--muted);font-size:12px}
+  .ps-total .pt-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+  .ps-total .pt-row b{color:#fff;font-size:13px;font-weight:700}
+  .ps-total .pt-strong{border-top:1px solid var(--green);margin-top:4px;padding-top:6px}
+  .ps-total .pt-strong b{color:#2fd06a;font-size:18px}
   .ps-card .badge{position:absolute;top:9px;right:9px;width:19px;height:19px;border-radius:50%;display:none;align-items:center;justify-content:center;overflow:hidden;z-index:2}
   .ps-card.sel .badge{display:inline-flex}
   .ps-card .badge .bf{position:absolute;inset:0;width:100%;height:100%;z-index:0}
@@ -229,6 +244,7 @@
   .ps-footer{position:relative;z-index:1;width:100%;max-width:178mm;margin:0 auto}
   .incl-pdf{color:var(--red-2);font-weight:600}
   .bk-info{font-size:11px;color:var(--muted);margin:0 auto 8px;max-width:150mm;line-height:1.45}
+  .bk-price-pdf{display:inline-block;font-size:13px;font-weight:700;color:#2fd06a;border:1px solid var(--green);border-radius:7px;padding:5px 12px;margin:0 auto 10px}
   .ps-page .ps-gal{margin:0;width:100%}
   .ps-page .gl{text-align:center;font-size:26px;font-weight:800;margin-bottom:22px}
   .ps-page .ps-row2{justify-content:center}
@@ -312,6 +328,7 @@
   </div>
 
   <!-- Tabs -->
+  <div id="lockNote" class="lock-note">Спочатку повністю заповніть «Дані замовлення»</div>
   <div class="tabs">
     <button class="tab active" data-tab="ext">Екстер'єр</button>
     <button class="tab" data-tab="int">Інтер'єр</button>
@@ -330,6 +347,7 @@
     <div class="subsec" id="sec-basekit" style="display:none">
       <div class="subsec-head">Базовий комплект оновлення</div>
       <div class="subsec-note">Перетворює зовнішність 2007–2015 у стиль 2015–2021. В комплект входить: передній і задній бампери, капот, кришка багажника, крила, фари, стопи, решітка, катафоти (стандартні).</div>
+      <div class="bk-price" id="basekitPrice"></div>
       <div id="basekit-holder"></div>
     </div>
 
@@ -353,6 +371,7 @@
   </div>
 
   <div class="actions">
+    <div id="priceTotal" class="price-total"></div>
     <button class="btn-gen" id="genBtn">Згенерувати PDF</button>
     <div class="err-msg" id="errMsg"></div>
   </div>
@@ -372,6 +391,7 @@
 
 </div>
 
+<script src="catalog.js"></script>
 <script>
 /* ============================================================
    ФОТО ДЕТАЛЕЙ
@@ -492,11 +512,13 @@ function renderSingleGroups(list, containerId){
       if(thumb){ el.classList.add("has-thumb"); el.innerHTML = `<img class="thumb" src="${thumb}" alt=""><span>${o}${incl}</span>`; }
       else if(hasPhotos){ el.classList.add("has-thumb"); el.innerHTML = `<div class="thumb thumb-x">✕</div><span>${o}${incl}</span>`; }
       else { el.innerHTML = `${o}${incl}`; }
+      el.insertAdjacentHTML("beforeend", '<span class="opt-price"></span>');
       el.onclick = ()=>{
         state.single[g.key] = o;
         opts.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));
         el.classList.add("sel");
         wrap.classList.remove("group-invalid");
+        refreshPrices();
       };
       opts.appendChild(el);
     });
@@ -540,6 +562,7 @@ function toggleBaseKit(){
     : "Оберіть варіанти елементів екстер'єру.";
 }
 document.getElementById("year").addEventListener("change", toggleBaseKit);
+document.getElementById("year").addEventListener("change", refreshPrices);
 toggleBaseKit();
 
 /* Паливо -> Пластик під інтеркулер (автоматично, з можливістю ручної зміни) */
@@ -551,6 +574,7 @@ function syncIntercooler(){
   if(el) el.click();
 }
 document.getElementById("fuel").addEventListener("change", syncIntercooler);
+document.getElementById("fuel").addEventListener("change", refreshPrices);
 
 /* ---------- Рендер так/ні ---------- */
 const tg = document.getElementById("ext-toggles");
@@ -563,11 +587,12 @@ EXTRAS.forEach(e=>{
     <div class="switch">
       <button class="yes" data-v="1">Так</button>
       <button class="no" data-v="0">Ні</button>
-    </div>`;
+    </div>
+    <span class="opt-price"></span>`;
   const yes = el.querySelector(".yes");
   const no  = el.querySelector(".no");
-  yes.onclick = ()=>{ state.extras[e.key]=true;  yes.classList.add("on"); no.classList.remove("on"); el.classList.add("sel-on"); el.classList.remove("toggle-invalid"); };
-  no.onclick  = ()=>{ state.extras[e.key]=false; no.classList.add("on");  yes.classList.remove("on"); el.classList.remove("sel-on"); el.classList.remove("toggle-invalid"); };
+  yes.onclick = ()=>{ state.extras[e.key]=true;  yes.classList.add("on"); no.classList.remove("on"); el.classList.add("sel-on"); el.classList.remove("toggle-invalid"); refreshPrices(); };
+  no.onclick  = ()=>{ state.extras[e.key]=false; no.classList.add("on");  yes.classList.remove("on"); el.classList.remove("sel-on"); el.classList.remove("toggle-invalid"); refreshPrices(); };
   tg.appendChild(el);
 });
 
@@ -654,6 +679,7 @@ function galleryHTML(g){
         <div class="badge"><img class="bf" src="${GREEN}"><span>\u2713</span></div>
         ${pic}
         <div class="cn">${o}${incl}</div>
+        <div class="cnp">${priceLabel(g.key,o)}</div>
       </div>`);
   });
   if(!cards.length) return "";
@@ -681,6 +707,7 @@ function extrasGalleryHTML(){
         <div class="badge"><img class="bf" src="${GREEN}"><span>\u2713</span></div>
         ${pic}
         <div class="cn">${extraLabel(e)}</div>
+        <div class="cnp">${priceLabel("extra", e.label)}</div>
       </div>`);
   });
   return `<div class="ps-gal ex-gal">${cardsRows(cards, `<div class="gl">Додаткові опції</div>`)}</div>`;
@@ -693,7 +720,8 @@ function baseKitStack(){
   const r1=`<div class="ps-row2 bk-row">${mk(PHOTOS["basekit::ba"],"До / Після")}</div>`;
   const r2=`<div class="ps-row2 bk-row">${mk(PHOTOS["basekit::kit"],"Склад комплекту")}</div>`;
   const info=`<div class="bk-info">В комплект входить: передній і задній бампери, капот, кришка багажника, крила, фари, стопи, решітка, катафоти (стандартні).</div>`;
-  return `<div class="ps-gal bk-gal"><div class="gl-keep">${head}${info}${r1}</div>${r2}</div>`;
+  const price=`<div class="bk-price-pdf">Ціна комплекту: ${fmtMoney(basekitPrice())} ${CUR}</div>`;
+  return `<div class="ps-gal bk-gal"><div class="gl-keep">${head}${info}${price}${r1}</div>${r2}</div>`;
 }
 
 /* Базова комплектація 2015–2021 (PDF) */
@@ -704,6 +732,46 @@ function baseStockStack(){
   const r1=`<div class="ps-row2 bk-row">${mk(PHOTOS["basestock::front"],"Вигляд спереду")}</div>`;
   const r2=`<div class="ps-row2 bk-row">${mk(PHOTOS["basestock::back"],"Вигляд ззаду")}</div>`;
   return `<div class="ps-gal bs-gal"><div class="gl-keep">${head}${info}${r1}</div>${r2}</div>`;
+}
+
+/* ---------- Ціни (локальне джерело catalog.js) ---------- */
+const CUR = "$";
+function fmtMoney(n){ return new Intl.NumberFormat("uk-UA").format(Math.round(n||0)); }
+function catEntry(g,o){ return (window.CATALOG && window.CATALOG[g+"::"+o]) || null; }
+function getPrice(g,o){ const e=catEntry(g,o); return e && e.price || 0; }
+function getId(g,o){ const e=catEntry(g,o); return e && e.id || null; }
+function priceMode(){ const y=document.getElementById("year").value; return y==="2007–2015"?"delta":(y==="2015–2021"?"full":null); }
+function basePrice(g){ const b=INCLUDED[g]; return b?getPrice(g,b):0; }
+function optionValue(g,o){ if(o==="Не потрібно") return 0; const m=priceMode(); const p=getPrice(g,o); return m==="delta"?Math.max(0,p-basePrice(g)):p; }
+function priceLabel(g,o){ const m=priceMode(); if(!m) return ""; if(o==="Не потрібно") return "—"; const v=optionValue(g,o); if(m==="delta") return v>0?("+ "+fmtMoney(v)+" "+CUR):"без доплати"; return fmtMoney(v)+" "+CUR; }
+function totalSum(){ const m=priceMode(); if(!m) return 0; let s=0; [...SINGLE_EXT,...SINGLE_INT].forEach(g=>{ const o=state.single[g.key]; if(o) s+=optionValue(g.key,o); }); EXTRAS.forEach(e=>{ if(state.extras[e.key]===true) s+=getPrice("extra",e.label); }); return s; }
+function basekitPrice(){ return getPrice("basekit","Базовий комплект оновлення"); }
+function summaryRows(){
+  const m=priceMode(); if(!m) return [];
+  if(m==="delta"){
+    const bk=basekitPrice(), dop=totalSum();
+    return [ {l:"Базовий комплект", v:bk}, {l:"Доплата за опції", v:dop}, {l:"Разом", v:bk+dop, strong:true} ];
+  }
+  return [ {l:"Орієнтовна вартість", v:totalSum(), strong:true} ];
+}
+function summaryHTML(){ return summaryRows().map(r=>`<div class="pt-row${r.strong?" pt-strong":""}"><span>${r.l}</span><b>${fmtMoney(r.v)} ${CUR}</b></div>`).join(""); }
+function refreshPrices(){
+  const m=priceMode();
+  document.querySelectorAll("#ext-groups .opt, #int-groups .opt").forEach(el=>{
+    const pe=el.querySelector(".opt-price"); if(!pe) return;
+    pe.textContent = priceLabel(el.dataset.gkey, el.dataset.val);
+  });
+  EXTRAS.forEach(e=>{
+    const t=document.querySelector(`.toggle[data-ekey="${e.key}"] .opt-price`);
+    if(t) t.textContent = m ? (fmtMoney(getPrice("extra",e.label))+" "+CUR) : "";
+  });
+  const bkp=document.getElementById("basekitPrice");
+  if(bkp) bkp.textContent = "Ціна комплекту: " + fmtMoney(basekitPrice()) + " " + CUR;
+  const bar=document.getElementById("priceTotal");
+  if(bar){
+    if(!m){ bar.style.display="none"; bar.innerHTML=""; }
+    else { bar.style.display="block"; bar.innerHTML=summaryHTML(); }
+  }
 }
 
 /* ---------- Генерація ---------- */
@@ -789,6 +857,7 @@ function generate(){
         <div><span>Паливо</span><b>${fuel}</b></div>
       </div>`;
   const lastInner = `
+      <div class="ps-total">${summaryHTML()}</div>
       <div class="ps-sign"><div>Менеджер (підпис)</div><div>Клієнт (підпис)</div></div>
       <div class="ps-foot"><span>Toyota Land Cruiser 200 — бриф тюнінгу</span><span>№ ${orderNo} · ${today}</span></div>`;
 
@@ -813,6 +882,7 @@ function generate(){
   requestAnimationFrame(fitPreview);
 }
 document.getElementById("hdrLogo").src = LOGO;
+refreshPrices();
 
 ["orderNo","clientName","clientPhone"].forEach(id=>document.getElementById(id).addEventListener("input", e=>e.target.classList.remove("invalid")));
 ["year","fuel"].forEach(id=>document.getElementById(id).addEventListener("change", e=>e.target.classList.remove("invalid")));
@@ -834,6 +904,34 @@ document.getElementById("hdrLogo").src = LOGO;
   ph.addEventListener("focus", ()=>{ if(!ph.value.trim().startsWith("+380")) ph.value = "+380 "; });
   ph.addEventListener("input", ()=>{ fmt(); ph.classList.remove("invalid"); });
 })();
+function orderComplete(){
+  const o=document.getElementById("orderNo").value.trim();
+  const n=document.getElementById("clientName").value.trim();
+  const p=document.getElementById("clientPhone").value.replace(/\D/g,"");
+  const y=document.getElementById("year").value;
+  const f=document.getElementById("fuel").value;
+  return !!(o && n && /^380\d{9}$/.test(p) && y && f);
+}
+function updateLock(){
+  const ok=orderComplete();
+  ["pane-ext","pane-int"].forEach(id=>document.getElementById(id).classList.toggle("locked",!ok));
+  document.querySelector(".tabs").classList.toggle("locked",!ok);
+  document.querySelector(".actions").classList.toggle("locked",!ok);
+  const note=document.getElementById("lockNote"); if(note) note.style.display = ok?"none":"block";
+}
+["orderNo","clientName","clientPhone","year","fuel"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener("input", updateLock);
+  el.addEventListener("change", updateLock);
+});
+updateLock();
+/* Тимчасові значення за замовчуванням у «Дані замовлення» (прибрати за потреби) */
+document.getElementById("orderNo").value    = "789987";
+document.getElementById("clientName").value = "Pavel Test";
+document.getElementById("clientPhone").value= "+380 50 123 45 67";
+document.getElementById("year").value       = "2007–2015";
+document.getElementById("fuel").value       = "Бензин";
+toggleBaseKit(); syncIntercooler(); updateLock(); refreshPrices();
 document.getElementById("genBtn").onclick = generate;
 document.getElementById("pvClose").onclick = ()=> document.getElementById("preview").classList.remove("open");
 document.getElementById("pvPrint").onclick = ()=> window.print();

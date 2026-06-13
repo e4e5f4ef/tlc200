@@ -19,8 +19,7 @@ if [ -z "$MSG" ]; then
 fi
 
 # 3) Додати файли брифа й закомітити
-git add index.html
-# Якщо хочеш коммітити всю теку — заміни рядок вище на:  git add -A
+git add -A   # додає всі файли теки (index.html, NOTES.md тощо)
 git commit -m "$MSG" || { echo "Немає змін для коміту."; }
 
 # 4) Запушити, якщо налаштований remote 'origin'
