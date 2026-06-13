@@ -153,6 +153,15 @@
     box-shadow:0 6px 20px rgba(211,19,43,.35);
   }
   .btn-gen:hover{filter:brightness(1.08)}
+  .btn-gen:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.4)}
+  .grp-status{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+  .grp-status.need{background:#33260d;color:#f0a92b;border:1px solid #6b4e16}
+  .grp-status.ok{background:#0d2a17;color:#2fd06a;border:1px solid var(--green)}
+  .toggle.need{border-color:#6b4e16}
+  .toggle .grp-status{margin-top:8px}
+  .block-counter{display:none;text-align:center;font-size:13px;font-weight:600;margin-bottom:10px}
+  .block-counter.need{color:#f0a92b}
+  .block-counter.ok{color:#2fd06a}
   .err-msg{color:var(--red-2);font-size:13px;text-align:center;margin-top:10px;min-height:16px}
   .locked{opacity:.4;pointer-events:none;filter:grayscale(.35)}
   .lock-note{display:none;color:var(--red-2);font-size:13px;font-weight:600;margin:0 0 12px}
@@ -366,6 +375,7 @@
   </div>
 
   <div class="actions">
+    <div id="blockCounter" class="block-counter"></div>
     <div id="priceTotal" class="price-total"></div>
     <button class="btn-gen" id="genBtn">Згенерувати PDF</button>
     <div class="err-msg" id="errMsg"></div>
@@ -493,8 +503,9 @@ function renderSingleGroups(list, containerId){
   list.forEach(g=>{
     const wrap = document.createElement("div");
     wrap.className = "group";
+    wrap.dataset.gkey = g.key;
     const hasPhotos = g.options.some(o=> PHOTOS[g.key+"::"+o]);
-    wrap.innerHTML = `<div class="group-title">${g.label}</div><div class="opts${hasPhotos?" photo-grid":""}"></div>`;
+    wrap.innerHTML = `<div class="group-title">${g.label} <span class="grp-status need">Оберіть варіант</span></div><div class="opts${hasPhotos?" photo-grid":""}"></div>`;
     const opts = wrap.querySelector(".opts");
     g.options.forEach(o=>{
       const el = document.createElement("div");
@@ -595,7 +606,8 @@ EXTRAS.forEach(e=>{
       <button class="yes" data-v="1">Так</button>
       <button class="no" data-v="0">Ні</button>
     </div>
-    <span class="opt-price"></span>`;
+    <span class="opt-price"></span>
+    <span class="grp-status need">Оберіть</span>`;
   const yes = el.querySelector(".yes");
   const no  = el.querySelector(".no");
   yes.onclick = ()=>{ state.extras[e.key]=true;  yes.classList.add("on"); no.classList.remove("on"); el.classList.add("sel-on"); el.classList.remove("toggle-invalid"); refreshPrices(); };
@@ -762,6 +774,25 @@ function summaryRows(){
   return [ {l:"Орієнтовна вартість", v:totalSum(), strong:true} ];
 }
 function summaryHTML(){ return summaryRows().map(r=>`<div class="pt-row${r.strong?" pt-strong":""}"><span>${r.l}</span><b>${fmtMoney(r.v)} ${CUR}</b></div>`).join(""); }
+function updateStatus(){
+  let total=0, filled=0;
+  [...SINGLE_EXT, ...SINGLE_INT].forEach(g=>{
+    total++; const ok=!!state.single[g.key]; if(ok) filled++;
+    const wrap=document.querySelector(`.group[data-gkey="${g.key}"]`);
+    const b=wrap && wrap.querySelector(".grp-status");
+    if(b){ b.textContent = ok?"✓ Обрано":"Оберіть варіант"; b.className="grp-status "+(ok?"ok":"need"); }
+  });
+  EXTRAS.forEach(e=>{
+    total++; const ok=(state.extras[e.key]!==null && state.extras[e.key]!==undefined); if(ok) filled++;
+    const t=document.querySelector(`.toggle[data-ekey="${e.key}"]`);
+    if(t){ t.classList.toggle("need",!ok); const b=t.querySelector(".grp-status"); if(b){ b.textContent=ok?"✓ Обрано":"Оберіть"; b.className="grp-status "+(ok?"ok":"need"); } }
+  });
+  const cnt=document.getElementById("blockCounter");
+  if(cnt){ cnt.textContent=`Обрано ${filled} / ${total} блоків`; cnt.className="block-counter "+(filled===total?"ok":"need"); }
+  const gen=document.getElementById("genBtn");
+  if(gen) gen.disabled = !(orderComplete() && filled===total);
+}
+
 function refreshPrices(){
   const m=priceMode();
   document.querySelectorAll("#ext-groups .opt, #int-groups .opt").forEach(el=>{
@@ -779,6 +810,7 @@ function refreshPrices(){
     if(!m){ bar.style.display="none"; bar.innerHTML=""; }
     else { bar.style.display="block"; bar.innerHTML=summaryHTML(); }
   }
+  updateStatus();
 }
 
 /* ---------- Генерація ---------- */
@@ -924,6 +956,7 @@ function updateLock(){
   ["pane-ext","pane-int"].forEach(id=>document.getElementById(id).classList.toggle("locked",!ok));
   document.querySelector(".actions").classList.toggle("locked",!ok);
   const note=document.getElementById("lockNote"); if(note) note.style.display = ok?"none":"block";
+  if(typeof updateStatus==="function") updateStatus();
 }
 ["orderNo","clientName","clientPhone","year","fuel"].forEach(id=>{
   const el=document.getElementById(id);
