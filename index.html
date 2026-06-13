@@ -964,13 +964,6 @@ function updateLock(){
   el.addEventListener("change", updateLock);
 });
 updateLock();
-/* Тимчасові значення за замовчуванням у «Дані замовлення» (прибрати за потреби) */
-document.getElementById("orderNo").value    = "789987";
-document.getElementById("clientName").value = "Pavel Test";
-document.getElementById("clientPhone").value= "+380 50 123 45 67";
-document.getElementById("year").value       = "2007–2015";
-document.getElementById("fuel").value       = "Бензин";
-toggleBaseKit(); syncIntercooler(); updateLock(); refreshPrices();
 document.getElementById("genBtn").onclick = generate;
 document.getElementById("pvClose").onclick = ()=> document.getElementById("preview").classList.remove("open");
 document.getElementById("pvPrint").onclick = ()=> window.print();
