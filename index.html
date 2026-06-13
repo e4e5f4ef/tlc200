@@ -83,8 +83,7 @@
   }
   .tab.active{background:var(--red);color:#fff;border-color:var(--red)}
   .tab:hover:not(.active){border-color:var(--red);color:var(--txt)}
-  .tabpane{display:none}
-  .tabpane.active{display:block}
+  .tabpane{display:block}
 
   .group{padding:26px 0;border-top:2px solid var(--line)}
   .group:first-child{border-top:0;padding-top:6px}
@@ -329,10 +328,6 @@
 
   <!-- Tabs -->
   <div id="lockNote" class="lock-note">Спочатку повністю заповніть «Дані замовлення»</div>
-  <div class="tabs">
-    <button class="tab active" data-tab="ext">Екстер'єр</button>
-    <button class="tab" data-tab="int">Інтер'єр</button>
-  </div>
 
   <!-- Exterior -->
   <div class="card tabpane active" id="pane-ext">
@@ -464,7 +459,7 @@ const SINGLE_EXT = [
   {key:"taillight", label:"Задні ліхтарі",     options:["Стандарт","Executive Black","Sequental Black","Sequental Red","Sequental Red Plus","Не потрібно"]},
   {key:"reflector", label:"Задні катафоти",    options:["Стандарт","Червоні LED","Executive Black","Не потрібно"]},
   {key:"skirts",    label:"Обвіс (передні та задні накладки)", options:["Premium 2016","Premium 2019","Premium 2021","Wald","Не потрібно"]},
-  {key:"intercooler", label:"Пластик під інтеркулер", options:["Бензин","Дизель"]},
+  {key:"intercooler", label:"Пластик під інтеркулер", options:["Бензин","Дизель","Не потрібно"]},
 ];
 const EXTRAS = [
   {key:"mirror",   label:"Кришки дзеркал"},
@@ -473,7 +468,6 @@ const EXTRAS = [
   {key:"wheels",   label:"Колісні диски"},
   {key:"spoiler",  label:"Спойлер"},
   {key:"fender",   label:"Передні підкрилки"},
-  {key:"handle",   label:"Дверні ручки"},
 ];
 /* Назва дод. опції з позначкою стилю (фото-ключ лишається e.label) */
 function extraLabel(e){ return e.key === "fender" ? e.label : e.label + " (стиль 2015–2021)"; }
@@ -487,7 +481,7 @@ const SINGLE_INT = [
 
 /* Який варіант входить у базовий комплект (для 2007–2015) */
 const INCLUDED = { optics:"Стандарт", grille:"2016", taillight:"Стандарт", reflector:"Стандарт", intercooler:"Бензин" };
-const NONEED_STOCK = new Set(["optics","grille","taillight","reflector"]);
+const NONEED_STOCK = new Set(["optics","grille","taillight","reflector","intercooler"]);
 
 /* ---------- Стан ---------- */
 const state = { single:{}, extras:{} };
@@ -561,19 +555,32 @@ function toggleBaseKit(){
     ? "Стандартні варіанти вже входять у базовий комплект. За бажанням оберіть покращений варіант."
     : "Оберіть варіанти елементів екстер'єру.";
 }
+function resetSelections(){
+  state.single = {};
+  EXTRAS.forEach(e=> state.extras[e.key] = null);
+  document.querySelectorAll(".opt.sel").forEach(x=>x.classList.remove("sel"));
+  document.querySelectorAll(".toggle").forEach(t=>{
+    t.classList.remove("sel-on");
+    const y=t.querySelector(".yes"), n=t.querySelector(".no");
+    if(y) y.classList.remove("on"); if(n) n.classList.remove("on");
+  });
+}
+document.getElementById("year").addEventListener("change", ()=>{ resetSelections(); syncIntercooler(); refreshPrices(); });
 document.getElementById("year").addEventListener("change", toggleBaseKit);
 document.getElementById("year").addEventListener("change", refreshPrices);
 toggleBaseKit();
 
 /* Паливо -> Пластик під інтеркулер (автоматично, з можливістю ручної зміни) */
 function syncIntercooler(){
-  const fuel = document.getElementById("fuel").value;
-  const val = fuel === "Дизель" ? "Дизель" : (fuel === "Бензин" ? "Бензин" : null);
+  const y = document.getElementById("year").value;
+  let val;
+  if(y === "2015–2021"){ val = "Не потрібно"; }
+  else { const fuel = document.getElementById("fuel").value; val = fuel === "Дизель" ? "Дизель" : (fuel === "Бензин" ? "Бензин" : null); }
   if(!val) return;
   const el = document.querySelector(`.opt[data-gkey="intercooler"][data-val="${val}"]`);
   if(el) el.click();
 }
-document.getElementById("fuel").addEventListener("change", syncIntercooler);
+document.getElementById("fuel").addEventListener("change", ()=>{ if(document.getElementById("year").value==="2007–2015") syncIntercooler(); });
 document.getElementById("fuel").addEventListener("change", refreshPrices);
 
 /* ---------- Рендер так/ні ---------- */
@@ -915,7 +922,6 @@ function orderComplete(){
 function updateLock(){
   const ok=orderComplete();
   ["pane-ext","pane-int"].forEach(id=>document.getElementById(id).classList.toggle("locked",!ok));
-  document.querySelector(".tabs").classList.toggle("locked",!ok);
   document.querySelector(".actions").classList.toggle("locked",!ok);
   const note=document.getElementById("lockNote"); if(note) note.style.display = ok?"none":"block";
 }
