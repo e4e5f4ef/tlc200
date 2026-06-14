@@ -18,7 +18,7 @@
     --muted:#9a9aa0;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;overflow-x:hidden}
   body{
     background:var(--bg);
     color:var(--txt);
@@ -88,7 +88,7 @@
   .group{padding:26px 0;border-top:2px solid var(--line)}
   .group:first-child{border-top:0;padding-top:6px}
   .group:last-child{padding-bottom:4px}
-  .group-title{font-size:21px;font-weight:800;margin-bottom:16px;color:#fff;display:flex;align-items:center;gap:11px;letter-spacing:.3px}
+  .group-title{font-size:21px;font-weight:800;margin-bottom:16px;color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:8px 11px;letter-spacing:.3px}
   .group-title::before{content:"";width:6px;height:24px;background:var(--red);border-radius:3px;flex:none}
   .group.group-invalid{border:1px solid var(--red-2);border-radius:12px;padding:14px;background:rgba(211,19,43,.07);box-shadow:0 0 0 2px rgba(255,39,64,.18)}
   .group.group-invalid .group-title{color:var(--red-2)}
@@ -107,7 +107,7 @@
   .opt.sel::after{content:"✓";color:var(--green-2);font-weight:800;margin-left:8px}
   .opts.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .opt.has-thumb{display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px}
-  .opt.has-thumb .thumb{width:100%;height:320px;object-fit:cover;border-radius:9px;border:1px solid var(--line);margin:0 0 11px 0}
+  .opt.has-thumb .thumb{width:100%;max-width:100%;height:320px;object-fit:cover;border-radius:9px;border:1px solid var(--line);margin:0 0 11px 0}
   .opt[data-gkey="intercooler"] .thumb{object-fit:contain;background:#fff}
   .opt.ns-only{display:none}
   #pane-ext.stock-mode .opt.ns-only{display:flex}
@@ -125,7 +125,7 @@
   .bk-grid{grid-template-columns:1fr !important}
   .opt.has-thumb span{font-size:16px;font-weight:600}
   .opt.has-thumb.sel::after{margin:8px 0 0 0}
-  @media (max-width:680px){ .opts.photo-grid{grid-template-columns:1fr} }
+  @media (max-width:680px){ .opts.photo-grid{grid-template-columns:1fr} .opt.has-thumb .thumb{height:auto;aspect-ratio:3/2} }
 
   /* Toggles (так/ні) */
   .toggles{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
