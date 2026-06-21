@@ -71,6 +71,7 @@
   }
   .field input:focus, .field select:focus{border-color:var(--red)}
   .field input.invalid, .field select.invalid{border-color:var(--red-2);box-shadow:0 0 0 2px rgba(255,39,64,.25)}
+  .field input.warn{border-color:var(--red-2);box-shadow:0 0 0 2px rgba(255,39,64,.25)}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
@@ -603,8 +604,8 @@ EXTRAS.forEach(e=>{
   const tthumb = PHOTOS["extra::"+e.label];
   el.innerHTML = `${tthumb?`<img class="t-thumb" src="${tthumb}" alt="">`:""}<span class="t-label">${extraLabel(e)}</span>
     <div class="switch">
-      <button class="yes" data-v="1">Так</button>
-      <button class="no" data-v="0">Ні</button>
+      <button class="yes" data-v="1">✅ Так</button>
+      <button class="no" data-v="0">❌ Ні</button>
     </div>
     <span class="opt-price"></span>
     <span class="grp-status need">Оберіть</span>`;
@@ -952,9 +953,18 @@ function orderComplete(){
   return !!(o && n && /^380\d{9}$/.test(p) && y && f);
 }
 function updateLock(){
-  const ok=orderComplete();
+  const o=document.getElementById("orderNo").value.trim();
+  const n=document.getElementById("clientName").value.trim();
+  const pRaw=document.getElementById("clientPhone").value.replace(/\D/g,"");
+  const pOk=/^380\d{9}$/.test(pRaw);
+  const y=document.getElementById("year").value;
+  const f=document.getElementById("fuel").value;
+  const ok = !!(o && n && pOk && y && f);
   ["pane-ext","pane-int"].forEach(id=>document.getElementById(id).classList.toggle("locked",!ok));
-  const note=document.getElementById("lockNote"); if(note) note.style.display = ok?"none":"block";
+  const note=document.getElementById("lockNote");
+  if(note) note.style.display = ok ? "none" : "block";
+  const phEl=document.getElementById("clientPhone");
+  if(phEl) phEl.classList.toggle("warn", pRaw.length>3 && !pOk);
   if(typeof updateStatus==="function") updateStatus();
 }
 ["orderNo","clientName","clientPhone","year","fuel"].forEach(id=>{
