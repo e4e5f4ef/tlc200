@@ -18,7 +18,7 @@
     --muted:#9a9aa0;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;overflow-x:hidden}
+  html,body{margin:0;padding:0}
   body{
     background:var(--bg);
     color:var(--txt);
@@ -790,7 +790,7 @@ function updateStatus(){
   const cnt=document.getElementById("blockCounter");
   if(cnt){ cnt.textContent=`Обрано ${filled} / ${total} блоків`; cnt.className="block-counter "+(filled===total?"ok":"need"); }
   const gen=document.getElementById("genBtn");
-  if(gen) gen.disabled = !(orderComplete() && filled===total);
+  if(gen) gen.disabled = false;
 }
 
 function refreshPrices(){
@@ -954,7 +954,6 @@ function orderComplete(){
 function updateLock(){
   const ok=orderComplete();
   ["pane-ext","pane-int"].forEach(id=>document.getElementById(id).classList.toggle("locked",!ok));
-  document.querySelector(".actions").classList.toggle("locked",!ok);
   const note=document.getElementById("lockNote"); if(note) note.style.display = ok?"none":"block";
   if(typeof updateStatus==="function") updateStatus();
 }
